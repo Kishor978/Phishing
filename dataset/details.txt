@@ -1,0 +1,7 @@
+DEPHIDES https://github.com/ebubekirbbr/dephides/tree/main
+
+phishing-dataset  https://huggingface.co/datasets/ealvaradob/phishing-dataset
+
+TREC_05 https://zenodo.org/records/8339691
+
+PhiUSIIL_Phishing_URL_Dataset  https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset
