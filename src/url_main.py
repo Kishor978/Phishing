@@ -24,8 +24,8 @@ from urls.utils.training_utils import train_model, device # Import the device fr
 from urls.utils.plotting_utils import plot_metrics, plot_confusion_matrix, plot_roc_curve # Removed plot_f1_curve as train_model history doesn't track it by default for now
 
 # --- Configuration Constants ---
-# DATA_PATH = r"E:\Phising_detection\dataset\urls\urls.json"
-DATA_PATH="/kaggle/input/phishing/urls/urls.json"
+DATA_PATH = r"E:\Phising_detection\dataset\urls\urls.json"
+# DATA_PATH="/kaggle/input/phishing/urls/urls.json"
 MAX_VOCAB_SIZE_GNN = 5000
 MAX_URL_LEN_CHARCNN = 200 # Max URL length for charCNN (defined in url_processing but good to have here too)
 BATCH_SIZE = 64

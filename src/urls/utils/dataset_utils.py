@@ -2,7 +2,8 @@ import torch
 import pandas as pd
 from torch.utils.data import Dataset
 from torch_geometric.data import InMemoryDataset
-from urls.utils.urls_preprocessing import build_char_vocab_from_df, build_vocab_gnn,encode_url_char, url_to_graph, tokenize_url_gnn
+from urls.utils.urls_preprocessing import build_char_vocab_from_df, build_vocab_gnn,encode_url_char
+from urls.utils.fusion_model_utils import tokenize_char_url, url_to_graph
 
 class URLCharDataset(Dataset):
     """
@@ -51,22 +52,18 @@ class URLFusionDataset(Dataset):
     """
     def __init__(self, df, char_vocab, graph_vocab, max_len=200):
         self.data = []
-        # Iterate through the DataFrame to create (char_tensor, graph_data) pairs
         for _, row in df.iterrows():
-            char_tensor = tokenize_url_gnn(row['text'], char_vocab, max_len) # Renamed to avoid conflict
+            char_tensor = tokenize_char_url(row['text'], char_vocab, max_len)
             graph_data = url_to_graph(row['text'], row['label'], graph_vocab)
-            # Only include samples where a valid graph can be created
             if graph_data is not None:
                 self.data.append((char_tensor, graph_data))
-        if not self.data:
-            raise ValueError("No valid (char_tensor, graph_data) pairs could be generated.")
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         return self.data[idx]
-
+    
 if __name__ == '__main__':
     # Example usage (requires a dummy DataFrame)
 
