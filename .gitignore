@@ -209,5 +209,3 @@ __marimo__/
 *.csv
 *.json
 DEPHIDES
-email
-email_main.py
