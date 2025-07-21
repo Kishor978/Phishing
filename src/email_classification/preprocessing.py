@@ -10,11 +10,16 @@ logger = setup_logging()
 try:
     nlp = spacy.load(SPACY_MODEL, disable=["ner", "parser"])
     nlp.max_length = SPACY_MAX_LENGTH  # Increase limit
-    logger.info(f"SpaCy model '{SPACY_MODEL}' loaded with max_length {SPACY_MAX_LENGTH}.")
+    logger.info(
+        f"SpaCy model '{SPACY_MODEL}' loaded with max_length {SPACY_MAX_LENGTH}."
+    )
 except OSError:
-    logger.error(f"SpaCy model '{SPACY_MODEL}' not found. Please run 'python -m spacy download {SPACY_MODEL}'")
+    logger.error(
+        f"SpaCy model '{SPACY_MODEL}' not found. Please run 'python -m spacy download {SPACY_MODEL}'"
+    )
     # Fallback or exit if spacy model is essential
-    nlp = None # Set to None if loading fails
+    nlp = None  # Set to None if loading fails
+
 
 def clean_text(text):
     """
@@ -22,11 +27,16 @@ def clean_text(text):
     removing newlines/tabs, and multiple spaces.
     """
     text = str(text).encode("utf-8", errors="ignore").decode("utf-8", errors="ignore")
-    text = re.sub(r"[\r\n\t]+", " ", text) # Replace newlines/tabs with space
-    text = re.sub(r"\s+", " ", text).strip() # Replace multiple spaces with single space
-    text = text.lower() # Convert to lowercase
-    text = text.translate(str.maketrans('', '', string.punctuation)) # Remove punctuation
+    text = re.sub(r"[\r\n\t]+", " ", text)  # Replace newlines/tabs with space
+    text = re.sub(
+        r"\s+", " ", text
+    ).strip()  # Replace multiple spaces with single space
+    text = text.lower()  # Convert to lowercase
+    text = text.translate(
+        str.maketrans("", "", string.punctuation)
+    )  # Remove punctuation
     return text
+
 
 def preprocess_text_spacy(text):
     """
@@ -36,7 +46,7 @@ def preprocess_text_spacy(text):
     """
     if nlp is None:
         logger.error("SpaCy model not loaded, skipping advanced preprocessing.")
-        return text # Return original text or empty string
+        return text  # Return original text or empty string
 
     doc = nlp(text)
     # Lemmatize, remove stop words, remove non-alphabetic tokens

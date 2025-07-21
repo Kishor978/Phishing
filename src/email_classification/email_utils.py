@@ -1,4 +1,3 @@
-# email_classification/src/utils.py
 import logging
 import os
 import torch

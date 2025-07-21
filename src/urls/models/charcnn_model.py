@@ -2,11 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class CharCNN(nn.Module):
     """
     Character-level Convolutional Neural Network for URL classification.
     Takes character-encoded URLs as input.
     """
+
     def __init__(self, vocab_size, embed_dim=64):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)

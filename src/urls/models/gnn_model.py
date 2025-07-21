@@ -3,11 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_mean_pool
 
+
 class URLGNN(nn.Module):
     """
     Graph Neural Network for URL classification.
     Takes PyG Data objects (graph representations of URLs) as input.
     """
+
     def __init__(self, vocab_size, embed_dim=64):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, embed_dim)

@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_mean_pool
+
+
 # -------------------- CharCNN Module --------------------
 class CharCNN(nn.Module):
     def __init__(self, vocab_size, embed_dim=32, seq_len=200):
@@ -21,6 +23,7 @@ class CharCNN(nn.Module):
         x = self.fc(x)
         return x  # [B, 64]
 
+
 # -------------------- GNN Module --------------------
 class URLGNN(nn.Module):
     def __init__(self, vocab_size, embed_dim=64):
@@ -36,12 +39,14 @@ class URLGNN(nn.Module):
         x = global_mean_pool(x, data.batch)
         return x  # [B, 64]
 
+
 # -------------------- Fusion Model --------------------
 class FusionModel(nn.Module):
     """
     A multi-modal phishing detection model fusing character-level CNN features
     and graph-based GNN features from URLs.
     """
+
     def __init__(self, cnn_vocab_size, gnn_vocab_size):
         super().__init__()
         self.cnn = CharCNN(cnn_vocab_size)
