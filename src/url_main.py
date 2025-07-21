@@ -101,7 +101,7 @@ def run_gnn_experiment():
     logger.info("Starting GNN model training...")
     model, history = train_model(
         model, train_loader, val_loader, optimizer, criterion,
-        scheduler=scheduler, epochs=1, patience=PATIENCE,
+        scheduler=scheduler, epochs=EPOCHS, patience=PATIENCE,
         model_save_path="best_gnn_model.pt", model_type="gnn"
     )
     logger.info("GNN model training complete.")

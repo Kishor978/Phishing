@@ -1,7 +1,7 @@
 # email_classification/src/evaluation.py
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, roc_curve, auc, classification_report, f1_score, accuracy_score, roc_auc_score
+from sklearn.metrics import confusion_matrix, roc_curve, auc, classification_report
 import numpy as np
 import os
 from email_classification.email_utils import save_plot, setup_logging
