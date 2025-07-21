@@ -34,8 +34,8 @@ def run_experiment(model_type):
 
     # 1. Load Data
     # df = load_and_merge_trec_data()
-    # df = pd.read_csv(r'E:\Phising_detection\dataset\emails\TREC_07.csv',engine='python')
-    df=pd.read_csv("/kaggle/input/phishing/emails/TREC_07.csv", engine='python')
+    df = pd.read_csv(r'E:\Phising_detection\dataset\emails\TREC_07.csv',engine='python')
+    # df=pd.read_csv("/kaggle/input/phishing/emails/TREC_07.csv", engine='python')
     df.dropna(subset=['subject', 'body', 'label'], inplace=True)
 
     if df.empty:
@@ -53,7 +53,7 @@ def run_experiment(model_type):
 
     df['cleaned_body'] = df['body'].apply(clean_text)
     df['processed_body'] = df['cleaned_body'].apply(preprocess_text_spacy)
-
+    df['processed_text'] = df['processed_subject'] + " " + df['processed_body']
     # 3. Split Data
     # For PyTorch models, split before Dataset creation
     train_df, val_df = train_test_split(df, test_size=0.2, stratify=df['label'], random_state=42)
