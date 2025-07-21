@@ -4,7 +4,7 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix, roc_curve, auc, classification_report
 import numpy as np
 import os
-from email_classification.email_utils import save_plot, setup_logging
+from email_classification.email_utils import save_plot, setup_logging,METRICS_DIR 
 
 logger = setup_logging()
 
@@ -85,6 +85,19 @@ def print_and_save_classification_report(y_true, y_pred, model_name, labels=None
     
     # Save to a text file
     report_file_path = os.path.join(os.path.join(os.path.dirname(__file__), '..', 'results', 'metrics'), f"{model_name}_classification_report.txt")
+    with open(report_file_path, 'w') as f:
+        f.write(f"Classification Report for {model_name}:\n")
+        f.write(report)
+    logger.info(f"Classification report saved to: {report_file_path}")
+    
+def print_and_save_classification_report(y_true, y_pred, model_name, labels=None):
+    """Prints and saves the classification report."""
+    report = classification_report(y_true, y_pred, target_names=labels, zero_division=0)
+    logger.info(f"\nClassification Report for {model_name}:\n{report}")
+    
+    # Use METRICS_DIR directly for robust path construction
+    report_file_path = os.path.join(METRICS_DIR, f"{model_name}_classification_report.txt")
+    
     with open(report_file_path, 'w') as f:
         f.write(f"Classification Report for {model_name}:\n")
         f.write(report)
