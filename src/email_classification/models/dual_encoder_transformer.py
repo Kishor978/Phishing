@@ -1,4 +1,3 @@
-# email_classification/src/models/dual_encoder_transformer.py
 import torch
 import torch.nn as nn
 

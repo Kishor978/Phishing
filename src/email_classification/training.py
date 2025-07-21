@@ -48,12 +48,19 @@ def train_pytorch_model(model, train_loader, val_loader, optimizer, model_type,
                 labels = labels.to(device)
                 logits = model(text_input).squeeze(1) # Squeeze to (batch_size,)
                 
-            elif model_type in ['dual_bilstm', 'dual_transformer']: # For DualEncoderFusion, DualEncoderAttentionFusion
+            elif model_type in 'dual_bilstm': # For DualEncoderFusion
                 subject_input, body_input, labels = batch_data
                 subject_input = subject_input.to(device)
                 body_input = body_input.to(device)
                 labels = labels.to(device)
                 logits = model(subject_input, body_input).squeeze(1) # Squeeze to (batch_size,)
+            elif model_type== 'dual_transformer': # For  DualEncoderAttentionFusion
+                subject_input, body_input, labels = batch_data
+                subject_input = subject_input.to(device)
+                body_input = body_input.to(device)
+                labels = labels.to(device)
+                logits = model(subject_input, body_input).squeeze() # Squeeze to (batch_size,)
+
             else:
                 raise ValueError(f"Unknown PyTorch model type: {model_type}")
 
@@ -94,12 +101,18 @@ def train_pytorch_model(model, train_loader, val_loader, optimizer, model_type,
                     text_input = text_input.to(device)
                     labels = labels.to(device)
                     logits = model(text_input).squeeze(1)
-                elif model_type in ['dual_bilstm', 'dual_transformer']:
+                elif model_type =='dual_bilstm':
                     subject_input, body_input, labels = batch_data
                     subject_input = subject_input.to(device)
                     body_input = body_input.to(device)
                     labels = labels.to(device)
                     logits = model(subject_input, body_input).squeeze(1)
+                elif model_type =='dual_transformer':
+                    subject_input, body_input, labels = batch_data
+                    subject_input = subject_input.to(device)
+                    body_input = body_input.to(device)
+                    labels = labels.to(device)
+                    logits = model(subject_input, body_input).squeeze()
                 
                 loss = criterion(logits, labels)
                 val_total_loss += loss.item() * labels.size(0)
