@@ -1,3 +1,4 @@
+# email_classification/src/models/dual_encoder_transformer.py
 import torch
 import torch.nn as nn
 
@@ -39,5 +40,5 @@ class DualEncoderAttentionFusion(nn.Module):
         fusion = torch.cat((subj_ctx, body_ctx), dim=1)
         fusion = self.dropout(fusion)
         fusion = torch.relu(self.fc1(fusion))
-        return self.fc2(fusion).squeeze()
+        return torch.sigmoid(self.fc2(fusion)).squeeze()
 

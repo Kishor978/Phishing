@@ -110,9 +110,6 @@ def run_gnn_experiment():
     # For plotting, use the history's recorded metrics
     if history['val_labels']: # Check if validation was performed
         plot_metrics(history, title_suffix="(GNN)")
-        
-        logger.info("Classification Report (Baseline):\n" + classification_report(history['val_labels'], history['val_preds']))
-
         plot_confusion_matrix(history['val_labels'], history['val_preds'], title_suffix="(GNN)")
         plot_roc_curve(history['val_labels'], history['val_probs'], title_suffix="(GNN)")
     else:
@@ -159,8 +156,6 @@ def run_charcnn_experiment():
     logger.info("\n--- CharCNN Evaluation ---")
     if history['val_labels']:
         plot_metrics(history, title_suffix="(CharCNN)")
-        logger.info("Classification Report (Baseline):\n" + classification_report(history['val_labels'], history['val_preds']))
-
         plot_confusion_matrix(history['val_labels'], history['val_preds'], title_suffix="(CharCNN)")
         plot_roc_curve(history['val_labels'], history['val_probs'], title_suffix="(CharCNN)")
     else:
@@ -209,8 +204,6 @@ def run_fusion_experiment():
     logger.info("\n--- Fusion Model Evaluation ---")
     if history['val_labels']:
         plot_metrics(history, title_suffix="(Fusion)")
-        logger.info("Classification Report (Baseline):\n" + classification_report(history['val_labels'], history['val_preds']))
-
         plot_confusion_matrix(history['val_labels'], history['val_preds'], title_suffix="(Fusion)")
         plot_roc_curve(history['val_labels'], history['val_probs'], title_suffix="(Fusion)")
     else:

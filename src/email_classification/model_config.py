@@ -12,7 +12,7 @@ SPACY_MAX_LENGTH = 3_000_000 # Increased limit for large documents
 
 # --- Training Parameters (Common for PyTorch models) ---
 BATCH_SIZE = 64
-EPOCHS = 20# Adjusted to 10 as seen common in notebooks, some had 20 but 10 is also used
+EPOCHS = 10 # Adjusted to 10 as seen common in notebooks, some had 20 but 10 is also used
 LEARNING_RATE = 1e-3
 PATIENCE = 3 # Common patience value for early stopping (e.g., in BiLSTM)
 
