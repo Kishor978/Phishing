@@ -29,7 +29,7 @@ class BiLSTMEncoder(nn.Module):
         else:
             return self.dropout(hidden[-1, :, :])
 
-class DualEncoderFusion(nn.Module):
+class DualEncoderBilstmFusion(nn.Module):
     """
     Dual Encoder model using BiLSTMs for subject and body,
     followed by a fusion layer.

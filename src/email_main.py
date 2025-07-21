@@ -7,14 +7,12 @@ import os
 from sklearn.model_selection import train_test_split
 import torch
 from sklearn.metrics import roc_auc_score
-import csv
 
 # Import modules from email
-from email_classification.email_utils import setup_logging, device, MODELS_DIR, PLOTS_DIR, METRICS_DIR, save_metrics
-from email_classification.data_loader import load_and_merge_trec_data, extract_subject_body
+from email_classification.email_utils import setup_logging, device, MODELS_DIR,  save_metrics
 from email_classification.preprocessing import clean_text, preprocess_text_spacy
 from email_classification.datasets import EmailDataset, DualEncoderEmailDataset
-from email_classification.models import TraditionalEmailClassifier, BiLSTMClassifier, DualEncoderFusion, DualEncoderAttentionFusion
+from email_classification.models import TraditionalEmailClassifier, BiLSTMClassifier, DualEncoderBilstmFusion, DualEncoderAttentionFusion
 from email_classification.training import train_pytorch_model, train_traditional_model
 from email_classification.evaluation import plot_metrics, plot_confusion_matrix, plot_roc_curve, print_and_save_classification_report
 from email_classification.model_config import (
@@ -22,8 +20,7 @@ from email_classification.model_config import (
     BILSTM_EMBED_DIM, BILSTM_HIDDEN_DIM, BILSTM_NUM_LAYERS, BILSTM_DROPOUT, BILSTM_BIDIRECTIONAL,
     DUAL_BILSTM_EMBED_DIM, DUAL_BILSTM_HIDDEN_DIM, DUAL_BILSTM_NUM_LAYERS, DUAL_BILSTM_DROPOUT, DUAL_BILSTM_BIDIRECTIONAL,
     DUAL_BILSTM_FUSION_HIDDEN_DIM, DUAL_BILSTM_FUSION_DROPOUT,
-    DUAL_TRANS_EMBED_DIM, DUAL_TRANS_HIDDEN_DIM, DUAL_TRANS_NUM_LAYERS, DUAL_TRANS_DROPOUT, DUAL_TRANS_BIDIRECTIONAL,
-    DUAL_TRANS_FUSION_HIDDEN_DIM, DUAL_TRANS_FUSION_DROPOUT
+    DUAL_TRANS_EMBED_DIM, DUAL_TRANS_HIDDEN_DIM
 )
 
 # Setup logging
@@ -41,10 +38,6 @@ def run_experiment(model_type):
     if df.empty:
         logger.error("No data loaded. Exiting experiment.")
         return
-
-    # Split data for subject/body for dual encoders and baseline
-    # df_with_parts = extract_subject_body(df)
-
     # 2. Preprocess Data (apply to all relevant columns)
     logger.info("Applying preprocessing to email texts...")
     
@@ -100,7 +93,7 @@ def run_experiment(model_type):
             vocab_size = len(train_dataset.vocab)
 
             if model_type == 'dual_bilstm':
-                model = DualEncoderFusion(vocab_size,
+                model = DualEncoderBilstmFusion(vocab_size,
                                           embed_dim=DUAL_BILSTM_EMBED_DIM,
                                           hidden_dim=DUAL_BILSTM_HIDDEN_DIM,
                                           num_layers=DUAL_BILSTM_NUM_LAYERS,
@@ -111,12 +104,7 @@ def run_experiment(model_type):
             else: # dual_transformer
                 model = DualEncoderAttentionFusion(vocab_size,
                                                    embed_dim=DUAL_TRANS_EMBED_DIM,
-                                                   hidden_dim=DUAL_TRANS_HIDDEN_DIM,
-                                                   num_layers=DUAL_TRANS_NUM_LAYERS,
-                                                   dropout=DUAL_TRANS_DROPOUT,
-                                                   bidirectional=DUAL_TRANS_BIDIRECTIONAL,
-                                                   fusion_hidden_dim=DUAL_TRANS_FUSION_HIDDEN_DIM,
-                                                   fusion_dropout=DUAL_TRANS_FUSION_DROPOUT).to(device)
+                                                   hidden_dim=DUAL_TRANS_HIDDEN_DIM).to(device)
             
             train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
             val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
