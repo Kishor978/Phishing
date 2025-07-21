@@ -128,7 +128,7 @@ def run_experiment(model_type):
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=PATIENCE)
 
         model, history = train_pytorch_model(model, train_loader, val_loader, optimizer, model_type,
-                                              scheduler=scheduler, epochs=1, patience=PATIENCE,
+                                              scheduler=scheduler, epochs=EPOCHS, patience=PATIENCE,
                                               learning_rate=LEARNING_RATE)
         
         # Save vocabulary for PyTorch models
