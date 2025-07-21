@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, roc_curve, auc
+import os
+PLOT_DIR = 'plots'
+os.makedirs(PLOT_DIR, exist_ok=True)  # Ensure plot directory exists
 
 def plot_metrics(history, title_suffix=""):
     """
@@ -22,7 +25,9 @@ def plot_metrics(history, title_suffix=""):
     plt.ylabel('Accuracy')
     plt.legend()
     plt.tight_layout()
+    
     plt.show()
+    plt.savefig(os.path.join(PLOT_DIR, f"{title_suffix} plot.png"))
 
 def plot_f1_curve(history, title_suffix=""):
     """
@@ -40,6 +45,7 @@ def plot_f1_curve(history, title_suffix=""):
         plt.grid(True)
         plt.tight_layout()
         plt.show()
+        plt.savefig(os.path.join(PLOT_DIR,f"{title_suffix} f1_plot.png"))
     else:
         print("F1 scores not available in history for plotting.")
 
@@ -56,6 +62,7 @@ def plot_confusion_matrix(y_true, y_pred, title_suffix=""):
     plt.title(f"Confusion Matrix {title_suffix}")
     plt.tight_layout()
     plt.show()
+    plt.savefig(os.path.join(PLOT_DIR,f"{title_suffix} confusion_matrix.png"))
 
 def plot_roc_curve(y_true, y_probs, title_suffix=""):
     """
@@ -71,3 +78,4 @@ def plot_roc_curve(y_true, y_probs, title_suffix=""):
     plt.legend()
     plt.tight_layout()
     plt.show()
+    plt.savefig(os.path.join(PLOT_DIR,f"{title_suffix} roc_curve.png"))

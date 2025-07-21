@@ -24,8 +24,8 @@ from urls.utils.training_utils import train_model, device # Import the device fr
 from urls.utils.plotting_utils import plot_metrics, plot_confusion_matrix, plot_roc_curve # Removed plot_f1_curve as train_model history doesn't track it by default for now
 
 # --- Configuration Constants ---
-# DATA_PATH = r"E:\Phising_detection\dataset\urls\urls.json"
-DATA_PATH="/kaggle/input/phishing/urls/urls.json"
+DATA_PATH = r"E:\Phising_detection\dataset\urls\urls.json"
+# DATA_PATH="/kaggle/input/phishing/urls/urls.json"
 MAX_VOCAB_SIZE_GNN = 5000
 MAX_URL_LEN_CHARCNN = 200 # Max URL length for charCNN (defined in url_processing but good to have here too)
 BATCH_SIZE = 64
@@ -33,8 +33,10 @@ EPOCHS = 30
 PATIENCE = 5
 LEARNING_RATE = 1e-3
 LOG_DIR = 'logs'
+PLOT_DIR = 'plots'
 LOG_FILE = os.path.join(LOG_DIR, 'experiment_log.log')
 
+os.makedirs(PLOT_DIR, exist_ok=True) # Ensure plot directory exists
 # --- Configure Logging ---
 os.makedirs(LOG_DIR, exist_ok=True) # Ensure log directory exists
 
@@ -99,7 +101,7 @@ def run_gnn_experiment():
     logger.info("Starting GNN model training...")
     model, history = train_model(
         model, train_loader, val_loader, optimizer, criterion,
-        scheduler=scheduler, epochs=EPOCHS, patience=PATIENCE,
+        scheduler=scheduler, epochs=1, patience=PATIENCE,
         model_save_path="best_gnn_model.pt", model_type="gnn"
     )
     logger.info("GNN model training complete.")
