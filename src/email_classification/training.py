@@ -102,11 +102,18 @@ def train_pytorch_model(model, train_loader, val_loader, optimizer, model_type,
                     labels = labels.to(device)
                     logits = model(text_input).squeeze(1)
                 elif model_type =='dual_bilstm':
+                elif model_type =='dual_bilstm':
                     subject_input, body_input, labels = batch_data
                     subject_input = subject_input.to(device)
                     body_input = body_input.to(device)
                     labels = labels.to(device)
                     logits = model(subject_input, body_input).squeeze(1)
+                elif model_type =='dual_transformer':
+                    subject_input, body_input, labels = batch_data
+                    subject_input = subject_input.to(device)
+                    body_input = body_input.to(device)
+                    labels = labels.to(device)
+                    logits = model(subject_input, body_input).squeeze()
                 elif model_type =='dual_transformer':
                     subject_input, body_input, labels = batch_data
                     subject_input = subject_input.to(device)
