@@ -39,5 +39,5 @@ class DualEncoderAttentionFusion(nn.Module):
         fusion = torch.cat((subj_ctx, body_ctx), dim=1)
         fusion = self.dropout(fusion)
         fusion = torch.relu(self.fc1(fusion))
-        return torch.sigmoid(self.fc2(fusion)).squeeze()
+        return self.fc2(fusion).squeeze()
 
