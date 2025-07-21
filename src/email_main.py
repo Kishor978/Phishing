@@ -34,8 +34,8 @@ def run_experiment(model_type):
 
     # 1. Load Data
     # df = load_and_merge_trec_data()
-    df = pd.read_csv(r'E:\Phising_detection\dataset\emails\TREC_07.csv',engine='python')
-    # df=pd.read_csv("/kaggle/input/phishing/emails/TREC_07.csv", engine='python')
+    # df = pd.read_csv(r'E:\Phising_detection\dataset\emails\TREC_07.csv',engine='python')
+    df=pd.read_csv("/kaggle/input/phishing/emails/TREC_07.csv", engine='python')
     df.dropna(subset=['subject', 'body', 'label'], inplace=True)
 
     if df.empty:
