@@ -59,7 +59,7 @@ def train_pytorch_model(model, train_loader, val_loader, optimizer, model_type,
                 subject_input = subject_input.to(device)
                 body_input = body_input.to(device)
                 labels = labels.to(device)
-                logits = model(subject_input, body_input).squeeze(1) # Squeeze to (batch_size,)
+                logits = model(subject_input, body_input).squeeze() # Squeeze to (batch_size,)
 
             else:
                 raise ValueError(f"Unknown PyTorch model type: {model_type}")
