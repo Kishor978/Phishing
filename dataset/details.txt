@@ -1,6 +1,6 @@
 DEPHIDES https://github.com/ebubekirbbr/dephides/tree/main
 
-phishing-dataset  https://huggingface.co/datasets/ealvaradob/phishing-dataset
+urls  https://huggingface.co/datasets/ealvaradob/phishing-dataset   1 (Phishing) or 0 (ligit)
 
 TREC_05 https://zenodo.org/records/8339691
 

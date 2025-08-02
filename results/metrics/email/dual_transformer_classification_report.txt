@@ -1,0 +1,9 @@
+Classification Report for dual_transformer:
+              precision    recall  f1-score   support
+
+         Ham       0.99      0.99      0.99      4872
+        Spam       0.99      0.99      0.99      5790
+
+    accuracy                           0.99     10662
+   macro avg       0.99      0.99      0.99     10662
+weighted avg       0.99      0.99      0.99     10662
