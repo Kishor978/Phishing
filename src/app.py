@@ -5,9 +5,9 @@ import json
 import os
 
 # Import URL model components
-from urls.models.fusion_model import FusionModel
-from urls.utils.urls_preprocessing import encode_url_char, url_to_graph
-from urls.utils.urls_preprocessing import MAX_URL_LEN as URL_MAX_URL_LEN # Use specific max_len
+from urls.models import CharCNN
+from urls.utils.url_preprocessing import encode_url_char, MAX_URL_LEN
+from urls.utils.enhanced_classifier import EnhancedURLClassifier
 
 # Import Email model components
 from email_classification.models.dual_encoder_transformer import DualEncoderAttentionFusion
@@ -26,26 +26,55 @@ EMAIL_MODEL_DIR = r"E:\Phising_detection\results\models\email"
 
 # --- Model Loading Functions (cached by Streamlit) ---
 @st.cache_resource
-def load_url_charcgnn_model_and_assets():
-    """Loads the trained URL CharCGNN (Fusion) model and its vocabularies."""
-    model_path = os.path.join(URL_MODEL_DIR, 'best_fusion_model.pt')
-    char_vocab_path = os.path.join(URL_MODEL_DIR, 'vocab_char_fusion.json')
-    gnn_vocab_path = os.path.join(URL_MODEL_DIR, 'vocab_gnn_fusion.json')
+def load_url_charcnn_model_and_assets():
+    """Loads the trained URL CharCNN model and its vocabulary."""
+    model_path = os.path.join(URL_MODEL_DIR, 'best_charcnn.pt')
+    char_vocab_path = os.path.join(URL_MODEL_DIR, 'vocab_char.json')
 
-    if not all(os.path.exists(p) for p in [model_path, char_vocab_path, gnn_vocab_path]):
-        st.error(f"Required URL CharCGNN assets not found in {URL_MODEL_DIR}. Please train the model first.")
-        return None, None, None
+    # Try notebook directory as fallback
+    if not all(os.path.exists(p) for p in [model_path, char_vocab_path]):
+        nb_model_path = r"E:\Phising_detection\notebooks\url\best_charcnn.pt"
+        nb_vocab_path = r"E:\Phising_detection\notebooks\url\vocab_char.json"
+        
+        if all(os.path.exists(p) for p in [nb_model_path, nb_vocab_path]):
+            model_path = nb_model_path
+            char_vocab_path = nb_vocab_path
+        else:
+            st.error(f"Required URL CharCNN assets not found. Please train the model first.")
+            return None, None
 
     with open(char_vocab_path, 'r') as f:
         char_vocab = json.load(f)
-    with open(gnn_vocab_path, 'r') as f:
-        gnn_vocab = json.load(f)
 
-    model = FusionModel(cnn_vocab_size=len(char_vocab), gnn_vocab_size=len(gnn_vocab)).to(device)
+    model = CharCNN(vocab_size=len(char_vocab)+1, embed_dim=64).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval() # Set to evaluation mode
-    logger.info(f"URL CharCGNN model loaded from {model_path}")
-    return model, char_vocab, gnn_vocab
+    logger.info(f"URL CharCNN model loaded from {model_path}")
+    return model, char_vocab
+
+@st.cache_resource
+def load_enhanced_url_classifier():
+    """Loads the enhanced URL classifier that combines CharCNN with rules-based approach."""
+    # Use the CharCNN model path and vocab from best_charcnn.pt in notebooks/url/ directory
+    model_path = os.path.join(URL_MODEL_DIR, 'best_charcnn.pt')
+    vocab_path = os.path.join(URL_MODEL_DIR, 'vocab_char.json')
+    
+    if not all(os.path.exists(p) for p in [model_path, vocab_path]):
+        # Try the notebook directory as fallback
+        notebook_model_path = r"E:\Phising_detection\notebooks\url\best_charcnn.pt"
+        notebook_vocab_path = r"E:\Phising_detection\notebooks\url\vocab_char.json"
+        
+        if all(os.path.exists(p) for p in [notebook_model_path, notebook_vocab_path]):
+            model_path = notebook_model_path
+            vocab_path = notebook_vocab_path
+        else:
+            st.error(f"Required CharCNN assets not found. Please ensure the model is trained.")
+            return None
+    
+    # Initialize the enhanced classifier
+    enhanced_classifier = EnhancedURLClassifier(model_path, vocab_path)
+    logger.info(f"Enhanced URL classifier loaded with model from {model_path}")
+    return enhanced_classifier
 
 @st.cache_resource
 def load_email_dual_encoder_transformer_model_and_assets():
@@ -73,24 +102,56 @@ def load_email_dual_encoder_transformer_model_and_assets():
     return model, vocab
 
 # --- Prediction Functions (from inference_main.py, slightly adapted) ---
-def predict_url_charcgnn(model, char_vocab, gnn_vocab, url_string):
-    """Makes a prediction using the URL CharCGNN model."""
-    char_encoded = encode_url_char(url_string, max_len=URL_MAX_URL_LEN, char2idx=char_vocab)
-    char_input = torch.tensor(char_encoded, dtype=torch.long).unsqueeze(0).to(device) # Add batch dimension
+def predict_url_charcnn(model, char_vocab, url_string):
+    """
+    Makes a prediction using the URL CharCNN model with enhanced classification
+    
+    Args:
+        model: The CharCNN model
+        char_vocab: Character vocabulary for CharCNN
+        url_string: URL to classify
+    """
+    # Import the enhanced classifier
+    classifier = EnhancedURLClassifier()
+    
+    # Step 1: Check whitelist first for quick legitimate classification
+    if classifier.is_known_legitimate(url_string):
+        logger.info(f"URL {url_string} found in whitelist, classified as legitimate")
+        return "Legitimate", 0.95, "Domain in trusted whitelist"
+    
+    # Step 2: Use the CharCNN model
+    try:
+        # Preprocess URL for CharCNN input
+        char_encoded = encode_url_char(url_string, max_len=MAX_URL_LEN, char2idx=char_vocab)
+        char_input = torch.tensor(char_encoded, dtype=torch.long).unsqueeze(0).to(device) # Add batch dimension
 
-    graph_data = url_to_graph(url_string, label=0, vocab=gnn_vocab) # Label is dummy for inference
-    if graph_data is None:
-        logger.warning(f"Could not create a valid graph for URL: {url_string}. Assuming legitimate for URL model.")
-        return "Legitimate", 0.5 # Fallback
+        with torch.no_grad():
+            output = model(char_input)
+            probability = output.item() # Get probability 
 
-    graph_data = graph_data.to(device)
-
-    with torch.no_grad():
-        logits = model(char_input, graph_data)
-        probability = torch.sigmoid(logits).item() # Get probability from logits
-
-    prediction = "Phishing" if probability > 0.6 else "Legitimate"
-    return prediction, probability
+        prediction = "Phishing" if probability > 0.5 else "Legitimate"
+        
+        # Step 3: Apply rule-based enhancements
+        features = classifier.extract_url_features(url_string)
+        reason = "Model prediction"
+        
+        # Apply simple rule-based adjustments
+        if prediction == "Legitimate" and (
+            features.get('has_suspicious_keywords', False) or 
+            features.get('domain_entropy', 0) > 4.0 or
+            features.get('domain_dash_count', 0) > 2
+        ):
+            # Increase suspicion for legitimate URLs with suspicious features
+            reason = "Suspicious URL characteristics detected"
+            if probability < 0.3:
+                probability += 0.2
+        
+        logger.info(f"URL {url_string} classified as {prediction} with probability {probability:.4f}")
+        return prediction, probability, reason
+        
+    except Exception as e:
+        logger.error(f"Error predicting URL {url_string}: {str(e)}")
+        return "Unknown", 0.5, "Error in prediction"
 
 def _email_encode_text(text, vocab, max_len):
     """Helper to preprocess and encode email text for the dual encoder."""
@@ -154,7 +215,7 @@ st.title("🛡️ Phishing Email Detector")
 st.markdown("Enter an email's subject and body to check if it's a phishing attempt.")
 
 # Load models and assets (cached for performance)
-url_model, url_char_vocab, url_gnn_vocab = load_url_charcgnn_model_and_assets()
+url_model, url_char_vocab = load_url_charcnn_model_and_assets()
 email_model, email_vocab = load_email_dual_encoder_transformer_model_and_assets()
 
 if url_model is None or email_model is None:
@@ -222,13 +283,15 @@ if st.button("Analyze Email"):
                     st.write("Found and analyzing the following URLs:")
                     
                     # Create columns for URL display
-                    col1, col2, col3 = st.columns([2, 1, 1])
+                    col1, col2, col3, col4 = st.columns([2, 1, 1, 2])
                     with col1:
                         st.write("**URL**")
                     with col2:
                         st.write("**Verdict**")
                     with col3:
                         st.write("**Confidence**")
+                    with col4:
+                        st.write("**Reason**")
                     
                     # Analyze each URL
                     for i, url in enumerate(extracted_urls):
@@ -238,15 +301,15 @@ if st.button("Analyze Email"):
                             # If we added the protocol for analysis but it wasn't in original text
                             display_url = url[7:]  # Remove 'http://'
                         
-                        # Analyze URL
-                        url_pred, url_prob = predict_url_charcgnn(url_model, url_char_vocab, url_gnn_vocab, url)
+                        # Analyze URL with CharCNN model
+                        url_pred, url_prob, reason = predict_url_charcnn(url_model, url_char_vocab, url)
                         
                         # Set flag if phishing detected
                         if url_pred == "Phishing":
                             url_phishing_detected = True
                         
                         # Display in columns with appropriate styling
-                        col1, col2, col3 = st.columns([2, 1, 1])
+                        col1, col2, col3, col4 = st.columns([2, 1, 1, 2])
                         with col1:
                             st.write(f"`{display_url}`")
                         with col2:
@@ -256,6 +319,8 @@ if st.button("Analyze Email"):
                                 st.markdown(f"<span style='color:green'>**{url_pred}**</span>", unsafe_allow_html=True)
                         with col3:
                             st.write(f"{url_prob:.2f}")
+                        with col4:
+                            st.write(f"{reason}")
                         
                         # Add horizontal divider between URLs
                         if i < len(extracted_urls) - 1:
