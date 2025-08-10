@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, roc_curve, auc, classification_report
+from sklearn.metrics import confusion_matrix, roc_curve, auc, classification_report,f1_score, recall_score, precision_score,accuracy_score
 import numpy as np
 import os
 from email_classification.email_utils import save_plot, setup_logging,METRICS_DIR 
@@ -93,11 +93,19 @@ def print_and_save_classification_report(y_true, y_pred, model_name, labels=None
     """Prints and saves the classification report."""
     report = classification_report(y_true, y_pred, target_names=labels, zero_division=0)
     logger.info(f"\nClassification Report for {model_name}:\n{report}")
-    
+    f1=f1_score(y_true, y_pred, average='weighted')
+    recall=recall_score(y_true, y_pred, average='weighted')
+    precision=precision_score(y_true, y_pred, average='weighted')
+    accuracy=accuracy_score(y_true, y_pred)
+    logger.info(f"F1 Score: {f1:.4f}, Recall: {recall:.4f}, Precision: {precision:.4f}, Accuracy: {accuracy:.4f}")
     # Use METRICS_DIR directly for robust path construction
     report_file_path = os.path.join(METRICS_DIR, f"{model_name}_classification_report.txt")
     
     with open(report_file_path, 'w') as f:
         f.write(f"Classification Report for {model_name}:\n")
         f.write(report)
+        f.write(f"\nF1 Score: {f1:.4f}\n")
+        f.write(f"Recall: {recall:.4f}\n")
+        f.write(f"Precision: {precision:.4f}\n")
+        f.write(f"Accuracy: {accuracy:.4f}\n")
     logger.info(f"Classification report saved to: {report_file_path}")

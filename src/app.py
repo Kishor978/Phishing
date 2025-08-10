@@ -14,6 +14,8 @@ from email_classification.models.dual_encoder_transformer import DualEncoderAtte
 from email_classification.preprocessing import clean_text, preprocess_text_spacy
 from email_classification.email_utils import setup_logging, device # Use utilities from email_classification/src/utils
 from email_classification.model_config import DUAL_TRANS_EMBED_DIM, DUAL_TRANS_HIDDEN_DIM
+# Import the new sentiment analysis component
+from email_classification.sentiment_analysis import PhishingSentimentAnalyzer
 
 # Setup logging (optional, for debugging in console/file, Streamlit handles basic output)
 logger = setup_logging(log_file_name="streamlit_app_log.log")
@@ -87,7 +89,7 @@ def predict_url_charcgnn(model, char_vocab, gnn_vocab, url_string):
         logits = model(char_input, graph_data)
         probability = torch.sigmoid(logits).item() # Get probability from logits
 
-    prediction = "Phishing" if probability > 0.5 else "Legitimate"
+    prediction = "Phishing" if probability > 0.6 else "Legitimate"
     return prediction, probability
 
 def _email_encode_text(text, vocab, max_len):
@@ -120,10 +122,31 @@ def predict_email_dual_encoder_transformer(model, vocab, subject_string, body_st
 # --- URL Extraction Helper ---
 def extract_urls(text):
     """Extracts URLs from a given text using a regex."""
-    # Regex for common URL patterns (http, https, www. followed by domain)
-    url_pattern = r'https?://(?:www\.)?[a-zA-Z0-9./-]+(?:\?|\#|&)?(?:[a-zA-Z0-9./&=%_+-]+)?'
-    urls = re.findall(url_pattern, text)
-    return urls
+    # Multiple patterns for different URL formats
+    
+    # Standard URLs with http(s) protocol
+    standard_pattern = r'https?://(?:www\.)?[a-zA-Z0-9./-]+(?:\?|\#|&)?(?:[a-zA-Z0-9./&=%_+-]+)?'
+    
+    # URLs without protocol (e.g., example.com/path)
+    no_protocol_pattern = r'(?<!\S)(?:www\.)?[a-zA-Z0-9][a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[a-zA-Z0-9\/_.-]+)?(?:\?[a-zA-Z0-9=%&_.-]+)?'
+    
+    # URLs enclosed in brackets or parentheses (common in phishing examples)
+    bracketed_pattern = r'\[([a-zA-Z0-9][a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[a-zA-Z0-9\/_.-]+)?(?:\?[a-zA-Z0-9=%&_.-]+)?)\]'
+    
+    # Find all matches from different patterns
+    standard_urls = re.findall(standard_pattern, text)
+    no_protocol_urls = re.findall(no_protocol_pattern, text)
+    bracketed_urls = re.findall(bracketed_pattern, text)
+    
+    # Combine all results, removing duplicates
+    all_urls = list(set(standard_urls + no_protocol_urls + bracketed_urls))
+    
+    # For URLs without protocol, add 'http://' for analysis
+    for i, url in enumerate(all_urls):
+        if not url.startswith(('http://', 'https://')):
+            all_urls[i] = 'http://' + url
+    
+    return all_urls
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Phishing Email Detector", layout="centered")
@@ -149,24 +172,94 @@ if st.button("Analyze Email"):
             email_content_phishing = False
             url_phishing_detected = False
             
+            # Main model prediction
             email_model_pred, email_model_prob = predict_email_dual_encoder_transformer(email_model, email_vocab, subject, body)
+            
+            # Sentiment analysis (new component)
+            sentiment_analyzer = PhishingSentimentAnalyzer()
+            sentiment_results = sentiment_analyzer.analyze(subject, body)
+            
+            # Display main model results
             if email_model_pred == "Phishing":
                 email_content_phishing = True
-                st.info(f"Email Content Analysis: **Phishing** (Confidence: {email_model_prob:.2f})")
+                st.error(f"Email Content Analysis: **Phishing** (Confidence: {email_model_prob:.2f})")
             else:
-                st.info(f"Email Content Analysis: **Legitimate** (Confidence: {email_model_prob:.2f})")
+                st.success(f"Email Content Analysis: **Legitimate** (Confidence: {email_model_prob:.2f})")
+                
+            # Display sentiment analysis results in an expandable section
+            with st.expander("Email Sentiment Analysis"):
+                st.subheader("Emotional Manipulation Detection")
+                
+                # Create a horizontal bar chart for emotional triggers
+                triggers = {
+                    "Urgency": sentiment_results["urgency"],
+                    "Fear": sentiment_results["fear"],
+                    "Reward": sentiment_results["reward"],
+                    "Trust": sentiment_results["trust"],
+                    "Negative": sentiment_results["negative"]
+                }
+                
+                # Display the scores as a progress bar
+                for trigger_name, score in triggers.items():
+                    st.metric(label=trigger_name, value=f"{score:.2f}")
+                    st.progress(min(score, 1.0))  # Cap at 1.0 for progress bar
+                
+                # Show explanations
+                st.subheader("Analysis")
+                explanations = sentiment_analyzer.get_explanation(sentiment_results)
+                for explanation in explanations:
+                    st.info(explanation)
 
             # Extract and analyze URLs
             extracted_urls = extract_urls(body)
             if extracted_urls:
                 st.subheader("URLs Found in Email Body:")
-                for i, url in enumerate(extracted_urls):
-                    url_pred, url_prob = predict_url_charcgnn(url_model, url_char_vocab, url_gnn_vocab, url)
-                    if url_pred == "Phishing":
-                        url_phishing_detected = True
-                        st.write(f"- URL {i+1}: `{url}` -> **Phishing** (Confidence: {url_prob:.2f})")
-                    else:
-                        st.write(f"- URL {i+1}: `{url}` -> Legitimate (Confidence: {url_prob:.2f})")
+                
+                # Create a container for URL analysis
+                url_container = st.container()
+                
+                with url_container:
+                    st.write("Found and analyzing the following URLs:")
+                    
+                    # Create columns for URL display
+                    col1, col2, col3 = st.columns([2, 1, 1])
+                    with col1:
+                        st.write("**URL**")
+                    with col2:
+                        st.write("**Verdict**")
+                    with col3:
+                        st.write("**Confidence**")
+                    
+                    # Analyze each URL
+                    for i, url in enumerate(extracted_urls):
+                        # Display original URL (the one displayed to user might have added http://)
+                        display_url = url
+                        if url.startswith("http://") and "http://" not in body and "https://" not in body:
+                            # If we added the protocol for analysis but it wasn't in original text
+                            display_url = url[7:]  # Remove 'http://'
+                        
+                        # Analyze URL
+                        url_pred, url_prob = predict_url_charcgnn(url_model, url_char_vocab, url_gnn_vocab, url)
+                        
+                        # Set flag if phishing detected
+                        if url_pred == "Phishing":
+                            url_phishing_detected = True
+                        
+                        # Display in columns with appropriate styling
+                        col1, col2, col3 = st.columns([2, 1, 1])
+                        with col1:
+                            st.write(f"`{display_url}`")
+                        with col2:
+                            if url_pred == "Phishing":
+                                st.markdown(f"<span style='color:red'>**{url_pred}**</span>", unsafe_allow_html=True)
+                            else:
+                                st.markdown(f"<span style='color:green'>**{url_pred}**</span>", unsafe_allow_html=True)
+                        with col3:
+                            st.write(f"{url_prob:.2f}")
+                        
+                        # Add horizontal divider between URLs
+                        if i < len(extracted_urls) - 1:
+                            st.markdown("---")
             else:
                 st.info("No URLs found in the email body.")
 

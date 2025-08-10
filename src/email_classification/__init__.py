@@ -5,3 +5,4 @@ from .datasets import *
 from .email_utils import *
 from .training import *
 from .evaluation import *
+from .sentiment_analysis import *
